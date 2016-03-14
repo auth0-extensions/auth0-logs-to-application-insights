@@ -30,7 +30,7 @@ wt cron schedule \
     --secret APPINSIGHTS_INSTRUMENTATIONKEY="YOUR_APPLICATION_INSIGHTS_INSTRUMENTATION_KEY" \
     --json \
     "*/5 * * * *" \
-    https://raw.githubusercontent.com/auth0/auth0-logs-to-application-insights/master/index.js
+    ./build/bundle.js
 ```
 
 > You can get your Global Client Id/Secret here: https://auth0.com/docs/api/v1
