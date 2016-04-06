@@ -59,7 +59,7 @@ function lastLogCheckpoint (req, res) {
     return res.status(400).send({ message: 'Application Insights instrumentation key is missing.' });
   }
 
-  req.webtaskContext.read('history', {}, function (err, data) {
+  req.webtaskContext.storage.get((err, data) => {
     let checkpointId = typeof data === 'undefined' ? null : data.checkpointId;
     /*
      * If this is a scheduled task, we'll get the last log checkpoint from the previous run and continue from there.
@@ -213,7 +213,7 @@ function lastLogCheckpoint (req, res) {
           } catch (e) {
             console.log('Error parsing response, this might indicate that an error occurred:', response);
 
-            return req.webtaskContext.write('history', JSON.stringify({checkpointId: checkpointId}), {}, function (error) {
+            return req.webtaskContext.storage.set({checkpointId: checkpointId}, {force: 1}, (error) => {
               if (error) return res.status(500).send(error);
 
               res.status(500).send({
@@ -224,7 +224,7 @@ function lastLogCheckpoint (req, res) {
 
           // At least one item we sent was accepted, so we're good and next run can continue where we stopped.
           if (response.itemsAccepted && response.itemsAccepted > 0) {
-            return req.webtaskContext.write('history', JSON.stringify({checkpointId: checkpointId}), {}, function (error) {
+            return req.webtaskContext.storage.set({checkpointId: checkpointId}, {force: 1}, (error) => {
               if (error) return res.status(500).send(error);
 
               res.sendStatus(200);
@@ -233,7 +233,7 @@ function lastLogCheckpoint (req, res) {
 
           // None of our items were accepted, next run should continue from same starting point.
           console.log('No items accepted.');
-          return req.webtaskContext.write('history', JSON.stringify({checkpointId: checkpointId}), {}, function (error) {
+          return req.webtaskContext.storage.set({checkpointId: checkpointId}, {force: 1}, (error) => {
             if (error) return res.status(500).send(error);
 
             res.sendStatus(200);
