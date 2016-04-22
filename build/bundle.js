@@ -136,7 +136,7 @@ module.exports =
 
 	      take = take > 100 ? 100 : take;
 
-	      getLogsFromAuth0(req.webtaskContext.data.AUTH0_DOMAIN, req.access_token, take, context.checkpointId, function (logs, err) {
+	      getLogsFromAuth0(req.webtaskContext.data.AUTH0_DOMAIN, req.access_token, take, checkPoint, function (result, err) {
 	        if (err) {
 	          console.log('Error getting logs from Auth0', err);
 	          return callback(err);

@@ -88,31 +88,30 @@ function lastLogCheckpoint (req, res) {
 
       take = take > 100 ? 100 : take;
 
-      getLogsFromAuth0(req.webtaskContext.data.AUTH0_DOMAIN, req.access_token, take, context.checkpointId, (logs, err) => {
-        if (err) {
-          console.log('Error getting logs from Auth0', err);
-          return callback(err)
-        }
+      getLogsFromAuth0(req.webtaskContext.data.AUTH0_DOMAIN, req.access_token, take, checkPoint, function (result, err) {
+	        if (err) {
+	          console.log('Error getting logs from Auth0', err);
+	          return callback(err);
+	        }
 
-        if (result && result.length > 0) {
-          result.forEach((log) => {
-            // Application Insights does not allow you to send very old logs, so we'll only send the logs of the last 48 hours max.
-            if (log.date && moment().diff(moment(log.date), 'hours') < 48) {
-              logs.push(log);
-            }
-          });
+	        if (result && result.length > 0) {
+	          result.forEach(function (log) {
+	            // Application Insights does not allow you to send very old logs, so we'll only send the logs of the last 48 hours max.
+	            if (log.date && moment().diff(moment(log.date), 'hours') < 48) {
+	              logs.push(log);
+	            }
+	          });
 
-          console.log(`Retrieved ${logs.length} logs from Auth0 after ${checkPoint}.`);
-          setImmediate(() => {
-            checkpointId = result[result.length - 1]._id;
-            getLogs(result[result.length - 1]._id, callback);
-          });
-        }
-        else {
-          console.log(`Reached end of logs. Total: ${logs.length}.`);
-          return callback(null, logs);
-        }
-      });
+	          console.log('Retrieved ' + logs.length + ' logs from Auth0 after ' + checkPoint + '.');
+	          setImmediate(function () {
+	            checkpointId = result[result.length - 1]._id;
+	            getLogs(result[result.length - 1]._id, callback);
+	          });
+	        } else {
+	          console.log('Reached end of logs. Total: ' + logs.length + '.');
+	          return callback(null, logs);
+	        }
+	      });
     };
 
     /*
