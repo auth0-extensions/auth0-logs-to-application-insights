@@ -1,11 +1,12 @@
 "use latest";
 
-const Auth0     = require('auth0');
 const useragent = require('useragent');
 const moment    = require('moment');
 const express   = require('express');
 const Webtask   = require('webtask-tools');
 const app       = express();
+const Request   = require('superagent');
+const memoizer  = require('lru-memoizer');
 
 /*
  * Get the application insights client.
@@ -51,7 +52,7 @@ const getClient = (key) => {
 function lastLogCheckpoint (req, res) {
   let ctx = req.webtaskContext;
 
-  if (!ctx.data.AUTH0_DOMAIN || !ctx.data.AUTH0_GLOBAL_CLIENT_ID || !ctx.data.AUTH0_GLOBAL_CLIENT_SECRET) {
+  if (!ctx.data.AUTH0_DOMAIN || !ctx.data.AUTH0_CLIENT_ID || !ctx.data.AUTH0_CLIENT_SECRET) {
     return res.status(400).send({ message: 'Auth0 API v1 credentials or domain missing.' });
   }
 
@@ -71,27 +72,11 @@ function lastLogCheckpoint (req, res) {
       auth0_domain: ctx.data.AUTH0_DOMAIN
     };
 
-    const auth0 = new Auth0({
-      domain:       ctx.data.AUTH0_DOMAIN,
-      clientID:     ctx.data.AUTH0_GLOBAL_CLIENT_ID,
-      clientSecret: ctx.data.AUTH0_GLOBAL_CLIENT_SECRET
-    });
-
     /*
      * Test authenticating with the Auth0 API.
      */
     const authenticate = (callback) => {
-      auth0.getAccessToken(function (err, newToken) {
-        console.log('Authenticating...');
-
-        if (err) {
-          console.log('Error authenticating', err);
-          return callback(err);
-        }
-
-        console.log('Authentication success.');
-        return callback();
-      });
+      return callback();
     };
 
     /*
@@ -99,9 +84,14 @@ function lastLogCheckpoint (req, res) {
      */
     const logs = [];
     const getLogs = (checkPoint, callback) => {
-      auth0.getLogs({ take: 200, from: checkPoint }, (err, result) => {
+      let take = Number.parseInt(ctx.data.BATCH_SIZE);
+
+      take = take > 100 ? 100 : take;
+
+      getLogsFromAuth0(req.webtaskContext.data.AUTH0_DOMAIN, req.access_token, take, context.checkpointId, (logs, err) => {
         if (err) {
-          return console.log('Error getting logs:', err.message);
+          console.log('Error getting logs from Auth0', err);
+          return callback(err)
         }
 
         if (result && result.length > 0) {
@@ -225,7 +215,10 @@ function lastLogCheckpoint (req, res) {
           // At least one item we sent was accepted, so we're good and next run can continue where we stopped.
           if (response.itemsAccepted && response.itemsAccepted > 0) {
             return req.webtaskContext.storage.set({checkpointId: checkpointId}, {force: 1}, (error) => {
-              if (error) return res.status(500).send(error);
+              if (error) {
+                console.log('Error storing startCheckpoint', error);
+                return res.status(500).send({ error: error });
+              }
 
               res.sendStatus(200);
             });
@@ -234,7 +227,10 @@ function lastLogCheckpoint (req, res) {
           // None of our items were accepted, next run should continue from same starting point.
           console.log('No items accepted.');
           return req.webtaskContext.storage.set({checkpointId: checkpointId}, {force: 1}, (error) => {
-            if (error) return res.status(500).send(error);
+            if (error) {
+              console.log('Error storing checkpoint', error);
+              return res.status(500).send({ error: error });
+            }
 
             res.sendStatus(200);
           });
@@ -400,6 +396,71 @@ const logTypes = {
     level: 3 // Error
   }
 };
+
+function getLogsFromAuth0 (domain, token, take, from, cb) {
+  var url = `https://${domain}/api/v2/logs`;
+
+  Request
+    .get(url)
+    .set('Authorization', `Bearer ${token}`)
+    .set('Accept', 'application/json')
+    .query({ take: take })
+    .query({ from: from })
+    .query({ sort: 'date:1' })
+    .query({ per_page: take })
+    .end(function (err, res) {
+      if (err || !res.ok) {
+        console.log('Error getting logs', err);
+        cb(null, err);
+      } else {
+        console.log('x-ratelimit-limit: ', res.headers['x-ratelimit-limit']);
+        console.log('x-ratelimit-remaining: ', res.headers['x-ratelimit-remaining']);
+        console.log('x-ratelimit-reset: ', res.headers['x-ratelimit-reset']);
+        cb(res.body);
+      }
+    });
+}
+
+const getTokenCached = memoizer({
+  load: (apiUrl, audience, clientId, clientSecret, cb) => {
+    Request
+      .post(apiUrl)
+      .send({
+        audience: audience,
+        grant_type: 'client_credentials',
+        client_id: clientId,
+        client_secret: clientSecret
+      })
+      .type('application/json')
+      .end(function (err, res) {
+        if (err || !res.ok) {
+          cb(null, err);
+        } else {
+          cb(res.body.access_token);
+        }
+      });
+  },
+  hash: (apiUrl) => apiUrl,
+  max: 100,
+  maxAge: 1000 * 60 * 60
+});
+
+app.use(function (req, res, next) {
+  var apiUrl       = `https://${req.webtaskContext.data.AUTH0_DOMAIN}/oauth/token`;
+  var audience     = `https://${req.webtaskContext.data.AUTH0_DOMAIN}/api/v2/`;
+  var clientId     = req.webtaskContext.data.AUTH0_CLIENT_ID;
+  var clientSecret = req.webtaskContext.data.AUTH0_CLIENT_SECRET;
+
+  getTokenCached(apiUrl, audience, clientId, clientSecret, function (access_token, err) {
+    if (err) {
+      console.log('Error getting access_token', err);
+      return next(err);
+    }
+
+    req.access_token = access_token;
+    next();
+  });
+});
 
 app.get ('/', lastLogCheckpoint);
 app.post('/', lastLogCheckpoint);
