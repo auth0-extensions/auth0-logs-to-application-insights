@@ -54,14 +54,7 @@ module.exports = {
     //   compress: {
     //     warnings: false
     //   }
-    // }),
-    new WebpackOnBuildPlugin(function() {
-      var path   = './build/bundle.js';
-      var bundle = fs.readFileSync(path, 'utf8');
-      // Hack to ensure webtask will be using 2.1.0 and not latest.
-      bundle = bundle.replace(/require\("auth0"\)/ig, 'require("auth0@2.1.0")');
-      fs.writeFileSync(path, bundle);
-    })
+    // })
   ],
   resolve: {
     modulesDirectories: ['node_modules'],
