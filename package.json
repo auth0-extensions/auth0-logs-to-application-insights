@@ -13,10 +13,6 @@
   },
   "author": "dan.piessens@tricast.com",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/dpiessens/auth0-logs-to-application-insights/issues"
-  },
-  "homepage": "https://github.com/dpiessens/auth0-logs-to-application-insights#readme",
   "dependencies": {
     "express": "4.14.0",
     "lru-memoizer": "^1.2.0",
