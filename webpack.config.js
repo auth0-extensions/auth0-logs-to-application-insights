@@ -37,6 +37,9 @@ module.exports = {
     ]
   },
   externals: _(modules).reduce(function (acc, module) {
+    if (module.name === 'applicationinsights') {
+      return _.set(acc, module.name, false);
+    }
     return _.set(acc, module.name, true);
   }, {
     // Not provisioned via verquire
