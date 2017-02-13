@@ -88,12 +88,12 @@ module.exports =
 
 	    if (data.baseData.properties.user_id || data.baseData.properties.user_name) {
 	      envelope.tags['ai.user.id'] = data.baseData.properties.user_id || data.baseData.properties.user_name;
-	      envelope.tags['ai.user.accountId'] = data.baseData.properties.user_id || data.baseData.properties.user_name;
+	      envelope.tags['ai.user.accountId'] = data.baseData.properties.user_name || data.baseData.properties.user_id;
 	      envelope.tags['ai.user.authUserId'] = data.baseData.properties.user_id || data.baseData.properties.user_name;
 	    }
 
 	    if (data.baseData.properties.user_agent) {
-	      envelope.tags['ai.user.userAgent'] = data.baseData.properties.user_agent;
+	      envelope.tags['ai.user.agent'] = data.baseData.properties.user_agent;
 	    }
 	    return envelope;
 	  };
@@ -213,7 +213,7 @@ module.exports =
 	          record.device_version = agent.os.toVersion();
 	        }
 
-	        if (level >= 3) {
+	        if (level >= 4) {
 	          var error = new Error(record.type);
 	          error.name = record.type;
 	          client.trackException(error, record);

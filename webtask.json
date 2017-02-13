@@ -1,7 +1,7 @@
 {
   "title": "Logs to Application Insights",
   "name": "logs-to-application-insights",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "author": "dpiessens",
   "description": "Logs and export them to Application Insights",
   "type": "cron",
