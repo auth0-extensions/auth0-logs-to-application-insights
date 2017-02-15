@@ -23,7 +23,7 @@ const getClient = (key) => {
     envelope.os = data.baseData.properties.os;
     envelope.osVer = data.baseData.properties.os_version;
     envelope.tags['ai.device.id'] = data.baseData.properties.device;
-    envelope.tags['ai.device.machineName'] = '';
+    envelope.tags['ai.device.machineName'] = data.baseData.properties.client_name;
     envelope.tags['ai.device.type'] = 'mobile:' + data.baseData.properties.isMobile;
     envelope.tags['ai.device.os'] = data.baseData.properties.os;
     envelope.tags['ai.device.osVersion'] = data.baseData.properties.os_version;
@@ -37,7 +37,7 @@ const getClient = (key) => {
     if (data.baseData.properties.user_id || data.baseData.properties.user_name) {
       envelope.tags['ai.user.id'] = data.baseData.properties.user_id || data.baseData.properties.user_name;
       envelope.tags['ai.user.accountId'] = data.baseData.properties.user_name || data.baseData.properties.user_id;
-      envelope.tags['ai.user.authUserId'] = data.baseData.properties.user_id || data.baseData.properties.user_name;
+      envelope.tags['ai.user.authUserId'] = data.baseData.properties.user_name || data.baseData.properties.user_id;
     }
 
     if (data.baseData.properties.user_agent) {

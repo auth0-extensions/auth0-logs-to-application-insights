@@ -1,6 +1,6 @@
 {
   "name": "logs-to-application-insights",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "This extension will take all of your Auth0 logs and export them to Application Insights",
   "main": "index.js",
   "scripts": {
