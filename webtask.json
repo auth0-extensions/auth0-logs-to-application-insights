@@ -1,4 +1,5 @@
-{
+﻿{
+  "codeUrl": "https://raw.githubusercontent.com/shep1987/auth0-logs-to-application-insights/master/build/bundle.js",
   "title": "Logs to Application Insights",
   "name": "logs-to-application-insights",
   "version": "1.5.0",
