@@ -1,4 +1,4 @@
-# Auth0 - Logs to Application Insights Webtask
+﻿# Auth0 - Logs to Application Insights Webtask
 
 [![Auth0 Extensions](http://cdn.auth0.com/extensions/assets/badge.svg)](https://sandbox.it.auth0.com/api/run/auth0-extensions/extensions-badge?webtask_no_cache=1)
 
@@ -27,15 +27,15 @@ To run it on a schedule (run every 5 minutes for example):
 wt cron schedule \
     --name auth0-logs-to-application-insights \
     --secret AUTH0_DOMAIN="YOUR_AUTH0_DOMAIN" \
-    --secret AUTH0_GLOBAL_CLIENT_ID="YOUR_AUTH0_GLOBAL_CLIENT_ID" \
-    --secret AUTH0_GLOBAL_CLIENT_SECRET="YOUR_AUTH0_GLOBAL_CLIENT_SECRET" \
+    --secret AUTH0_CLIENT_ID="YOUR_AUTH0_CLIENT_ID" \
+    --secret AUTH0_CLIENT_SECRET="YOUR_AUTH0_CLIENT_SECRET" \
     --secret APPINSIGHTS_INSTRUMENTATIONKEY="YOUR_APPLICATION_INSIGHTS_INSTRUMENTATION_KEY" \
-    --json \
+    --secret BATCH_SIZE=100    
     "*/5 * * * *" \
     ./build/bundle.js
 ```
 
-> You can get your Global Client Id/Secret here: https://auth0.com/docs/api/v1
+> You can get your Global Client Id/Secret here: https://auth0.com/docs/api/v2
 
 ## Usage
 
