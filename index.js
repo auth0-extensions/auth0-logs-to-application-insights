@@ -7,6 +7,7 @@ const Webtask = require('webtask-tools');
 const app = express();
 const Request = require('request');
 const memoizer = require('lru-memoizer');
+const metadata = require('./webtask.json');
 
 /*
  * Get the application insights client.
@@ -500,5 +501,10 @@ app.use(function (req, res, next) {
 
 app.get('/', lastLogCheckpoint);
 app.post('/', lastLogCheckpoint);
+
+// This endpoint would be called by webtask-gallery when the extension is installed as custom-extension
+app.get('/meta', (req, res) => {
+  res.status(200).send(metadata);
+});
 
 module.exports = Webtask.fromExpress(app);

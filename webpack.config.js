@@ -23,8 +23,11 @@ module.exports = {
         rules: [{
             test: /\.jsx?$/,
             use: ['babel-loader?presets[]=es2015'],
-            exclude: 'node_modules'
-        }]      
+            exclude: Path.resolve(__dirname, 'node_modules')
+        }, {
+          test: /\.json$/,
+          use: 'json-loader'
+        }]
     },
     externals: _(modules).reduce(function (acc, module) {
         return _.set(acc, module.name, true);
@@ -38,7 +41,7 @@ module.exports = {
             'sandboxjs': true
         }),
     plugins: [
-       
+
     ],
     resolve: {
         modules: [
