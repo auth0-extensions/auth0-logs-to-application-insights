@@ -64,7 +64,7 @@ module.exports =
 /******/ 	__webpack_require__.p = "/build/";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 13);
+/******/ 	return __webpack_require__(__webpack_require__.s = 12);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -123,7 +123,7 @@ module.exports = require("jsonwebtoken");
 module.exports = {
 	"title": "Auth0 Logs to Application Insights",
 	"name": "auth0-logs-to-application-insights",
-	"version": "1.5.0",
+	"version": "1.6.0",
 	"author": "auth0",
 	"description": "This extension will take all of your Auth0 logs and export them to Application Insights",
 	"type": "cron",
@@ -143,6 +143,9 @@ module.exports = {
 		"APPINSIGHTS_INSTRUMENTATIONKEY": {
 			"description": "Application Insights instrumentationKey",
 			"required": true
+		},
+		"START_FROM": {
+			"description": "The Auth0 LogId from where you want to start."
 		}
 	}
 };
@@ -151,66 +154,7 @@ module.exports = {
 /* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var apply = Function.prototype.apply;
-
-// DOM APIs, for completeness
-
-exports.setTimeout = function() {
-  return new Timeout(apply.call(setTimeout, window, arguments), clearTimeout);
-};
-exports.setInterval = function() {
-  return new Timeout(apply.call(setInterval, window, arguments), clearInterval);
-};
-exports.clearTimeout =
-exports.clearInterval = function(timeout) {
-  if (timeout) {
-    timeout.close();
-  }
-};
-
-function Timeout(id, clearFn) {
-  this._id = id;
-  this._clearFn = clearFn;
-}
-Timeout.prototype.unref = Timeout.prototype.ref = function() {};
-Timeout.prototype.close = function() {
-  this._clearFn.call(window, this._id);
-};
-
-// Does not start the time, just sets up the members needed.
-exports.enroll = function(item, msecs) {
-  clearTimeout(item._idleTimeoutId);
-  item._idleTimeout = msecs;
-};
-
-exports.unenroll = function(item) {
-  clearTimeout(item._idleTimeoutId);
-  item._idleTimeout = -1;
-};
-
-exports._unrefActive = exports.active = function(item) {
-  clearTimeout(item._idleTimeoutId);
-
-  var msecs = item._idleTimeout;
-  if (msecs >= 0) {
-    item._idleTimeoutId = setTimeout(function onTimeout() {
-      if (item._onTimeout)
-        item._onTimeout();
-    }, msecs);
-  }
-};
-
-// setimmediate attaches itself to the global object
-__webpack_require__(16);
-exports.setImmediate = setImmediate;
-exports.clearImmediate = clearImmediate;
-
-
-/***/ }),
-/* 7 */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports.auth0 = __webpack_require__(18);
+exports.auth0 = __webpack_require__(16);
 exports.fromConnect = exports.fromExpress = fromConnect;
 exports.fromHapi = fromHapi;
 exports.fromServer = exports.fromRestify = fromServer;
@@ -243,7 +187,7 @@ exports.html = function (options, cb) {
 };
 
 exports.pug = function (options, cb) {
-    var pug = __webpack_require__(24);
+    var pug = __webpack_require__(22);
     render(options, cb, (script)=>pug.render(script));
 };
 
@@ -263,7 +207,7 @@ async (dynamic context) => {
 }
 */
 exports.cs = function (options, cb) {
-    cb(null, __webpack_require__(14).func(options.script));
+    cb(null, __webpack_require__(13).func(options.script));
 };
 
 const SANITIZE_RX = /[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g;
@@ -431,57 +375,57 @@ function attachStorageHelpers(context) {
 
 
 /***/ }),
-/* 8 */
+/* 7 */
 /***/ (function(module, exports) {
 
 module.exports = require("applicationinsights");
 
 /***/ }),
-/* 9 */
+/* 8 */
 /***/ (function(module, exports) {
 
 module.exports = require("express");
 
 /***/ }),
-/* 10 */
+/* 9 */
 /***/ (function(module, exports) {
 
 module.exports = require("lru-memoizer");
 
 /***/ }),
-/* 11 */
+/* 10 */
 /***/ (function(module, exports) {
 
 module.exports = require("moment");
 
 /***/ }),
-/* 12 */
+/* 11 */
 /***/ (function(module, exports) {
 
 module.exports = require("useragent");
 
 /***/ }),
-/* 13 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-/* WEBPACK VAR INJECTION */(function(setImmediate) {
+
 "use latest";
 
-var useragent = __webpack_require__(12);
-var moment = __webpack_require__(11);
-var express = __webpack_require__(9);
-var Webtask = __webpack_require__(7);
+var useragent = __webpack_require__(11);
+var moment = __webpack_require__(10);
+var express = __webpack_require__(8);
+var Webtask = __webpack_require__(6);
 var app = express();
 var Request = __webpack_require__(1);
-var memoizer = __webpack_require__(10);
+var memoizer = __webpack_require__(9);
 var metadata = __webpack_require__(5);
 
 /*
  * Get the application insights client.
  */
 var getClient = function getClient(key) {
-    var appInsights = __webpack_require__(8);
+    var appInsights = __webpack_require__(7);
     var client = appInsights.getClient(key);
 
     // Override the original getEnvelope method to allow setting a custom time.
@@ -530,7 +474,9 @@ function lastLogCheckpoint(req, res) {
     }
 
     req.webtaskContext.storage.get(function (err, data) {
-        var checkpointId = typeof data === 'undefined' ? null : data.checkpointId;
+        var startFromId = ctx.data.START_FROM ? ctx.data.START_FROM : null;
+        var checkpointId = typeof data === 'undefined' ? startFromId : data.checkpointId;
+
         /*
          * If this is a scheduled task, we'll get the last log checkpoint from the previous run and continue from there.
          */
@@ -569,16 +515,9 @@ function lastLogCheckpoint(req, res) {
                             logs.push(log);
                         }
                     });
-
                     console.log('Retrieved ' + logs.length + ' logs from Auth0 after ' + checkPoint + '.');
-                    setImmediate(function () {
-                        checkpointId = result[result.length - 1]._id;
-                        getLogs(result[result.length - 1]._id, callback);
-                    });
-                } else {
-                    console.log('Reached end of logs. Total: ' + logs.length + '.');
-                    return callback(null, logs);
                 }
+                return callback(null, logs);
             });
         };
 
@@ -660,8 +599,14 @@ function lastLogCheckpoint(req, res) {
             }
 
             getLogs(checkpointId, function (err, logs) {
-                if (!logs) {
-                    return res.status(500).send({ err: err });
+                if (!logs || logs.length === 0) {
+                    return req.webtaskContext.storage.set({ checkpointId: checkpointId }, { force: 1 }, function (error) {
+                        if (error) {
+                            console.log('Error storing startCheckpoint', error);
+                            return res.status(500).send({ error: error });
+                        }
+                        res.sendStatus(200);
+                    });
                 }
 
                 exportLogs(logs, function (err, response) {
@@ -679,7 +624,7 @@ function lastLogCheckpoint(req, res) {
                         });
                     }
 
-                    if (response.errors.length > 0) {
+                    if (response.errors && response.errors.length > 0) {
                         return res.status(500).send(response.errors);
                     }
 
@@ -977,14 +922,13 @@ app.get('/meta', function (req, res) {
 });
 
 module.exports = Webtask.fromExpress(app);
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6).setImmediate))
 
 /***/ }),
-/* 14 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var fs = __webpack_require__(22)
-    , path = __webpack_require__(23)
+var fs = __webpack_require__(20)
+    , path = __webpack_require__(21)
     , builtEdge = path.resolve(__dirname, '../build/Release/' + (process.env.EDGE_USE_CORECLR || !fs.existsSync(path.resolve(__dirname, '../build/Release/edge_nativeclr.node')) ? 'edge_coreclr.node' : 'edge_nativeclr.node'))
     , edge;
 
@@ -1156,206 +1100,14 @@ exports.func = function(language, options) {
 
 
 /***/ }),
-/* 15 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = __webpack_require__(21)
+module.exports = __webpack_require__(19)
 
 
 /***/ }),
-/* 16 */
-/***/ (function(module, exports) {
-
-(function (global, undefined) {
-    "use strict";
-
-    if (global.setImmediate) {
-        return;
-    }
-
-    var nextHandle = 1; // Spec says greater than zero
-    var tasksByHandle = {};
-    var currentlyRunningATask = false;
-    var doc = global.document;
-    var registerImmediate;
-
-    function setImmediate(callback) {
-      // Callback can either be a function or a string
-      if (typeof callback !== "function") {
-        callback = new Function("" + callback);
-      }
-      // Copy function arguments
-      var args = new Array(arguments.length - 1);
-      for (var i = 0; i < args.length; i++) {
-          args[i] = arguments[i + 1];
-      }
-      // Store and register the task
-      var task = { callback: callback, args: args };
-      tasksByHandle[nextHandle] = task;
-      registerImmediate(nextHandle);
-      return nextHandle++;
-    }
-
-    function clearImmediate(handle) {
-        delete tasksByHandle[handle];
-    }
-
-    function run(task) {
-        var callback = task.callback;
-        var args = task.args;
-        switch (args.length) {
-        case 0:
-            callback();
-            break;
-        case 1:
-            callback(args[0]);
-            break;
-        case 2:
-            callback(args[0], args[1]);
-            break;
-        case 3:
-            callback(args[0], args[1], args[2]);
-            break;
-        default:
-            callback.apply(undefined, args);
-            break;
-        }
-    }
-
-    function runIfPresent(handle) {
-        // From the spec: "Wait until any invocations of this algorithm started before this one have completed."
-        // So if we're currently running a task, we'll need to delay this invocation.
-        if (currentlyRunningATask) {
-            // Delay by doing a setTimeout. setImmediate was tried instead, but in Firefox 7 it generated a
-            // "too much recursion" error.
-            setTimeout(runIfPresent, 0, handle);
-        } else {
-            var task = tasksByHandle[handle];
-            if (task) {
-                currentlyRunningATask = true;
-                try {
-                    run(task);
-                } finally {
-                    clearImmediate(handle);
-                    currentlyRunningATask = false;
-                }
-            }
-        }
-    }
-
-    function installNextTickImplementation() {
-        registerImmediate = function(handle) {
-            process.nextTick(function () { runIfPresent(handle); });
-        };
-    }
-
-    function canUsePostMessage() {
-        // The test against `importScripts` prevents this implementation from being installed inside a web worker,
-        // where `global.postMessage` means something completely different and can't be used for this purpose.
-        if (global.postMessage && !global.importScripts) {
-            var postMessageIsAsynchronous = true;
-            var oldOnMessage = global.onmessage;
-            global.onmessage = function() {
-                postMessageIsAsynchronous = false;
-            };
-            global.postMessage("", "*");
-            global.onmessage = oldOnMessage;
-            return postMessageIsAsynchronous;
-        }
-    }
-
-    function installPostMessageImplementation() {
-        // Installs an event handler on `global` for the `message` event: see
-        // * https://developer.mozilla.org/en/DOM/window.postMessage
-        // * http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#crossDocumentMessages
-
-        var messagePrefix = "setImmediate$" + Math.random() + "$";
-        var onGlobalMessage = function(event) {
-            if (event.source === global &&
-                typeof event.data === "string" &&
-                event.data.indexOf(messagePrefix) === 0) {
-                runIfPresent(+event.data.slice(messagePrefix.length));
-            }
-        };
-
-        if (global.addEventListener) {
-            global.addEventListener("message", onGlobalMessage, false);
-        } else {
-            global.attachEvent("onmessage", onGlobalMessage);
-        }
-
-        registerImmediate = function(handle) {
-            global.postMessage(messagePrefix + handle, "*");
-        };
-    }
-
-    function installMessageChannelImplementation() {
-        var channel = new MessageChannel();
-        channel.port1.onmessage = function(event) {
-            var handle = event.data;
-            runIfPresent(handle);
-        };
-
-        registerImmediate = function(handle) {
-            channel.port2.postMessage(handle);
-        };
-    }
-
-    function installReadyStateChangeImplementation() {
-        var html = doc.documentElement;
-        registerImmediate = function(handle) {
-            // Create a <script> element; its readystatechange event will be fired asynchronously once it is inserted
-            // into the document. Do so, thus queuing up the task. Remember to clean up once it's been called.
-            var script = doc.createElement("script");
-            script.onreadystatechange = function () {
-                runIfPresent(handle);
-                script.onreadystatechange = null;
-                html.removeChild(script);
-                script = null;
-            };
-            html.appendChild(script);
-        };
-    }
-
-    function installSetTimeoutImplementation() {
-        registerImmediate = function(handle) {
-            setTimeout(runIfPresent, 0, handle);
-        };
-    }
-
-    // If supported, we should attach to the prototype of global, since that is where setTimeout et al. live.
-    var attachTo = Object.getPrototypeOf && Object.getPrototypeOf(global);
-    attachTo = attachTo && attachTo.setTimeout ? attachTo : global;
-
-    // Don't get fooled by e.g. browserify environments.
-    if ({}.toString.call(global.process) === "[object process]") {
-        // For Node.js before 0.9
-        installNextTickImplementation();
-
-    } else if (canUsePostMessage()) {
-        // For non-IE10 modern browsers
-        installPostMessageImplementation();
-
-    } else if (global.MessageChannel) {
-        // For web workers, where supported
-        installMessageChannelImplementation();
-
-    } else if (doc && "onreadystatechange" in doc.createElement("script")) {
-        // For IE 6–8
-        installReadyStateChangeImplementation();
-
-    } else {
-        // For older browsers
-        installSetTimeoutImplementation();
-    }
-
-    attachTo.setImmediate = setImmediate;
-    attachTo.clearImmediate = clearImmediate;
-}(typeof self === "undefined" ? typeof global === "undefined" ? this : global : self));
-
-
-/***/ }),
-/* 17 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1410,17 +1162,17 @@ module.exports = function (webtask, options, ctx, req, res, routingInfo) {
 
 
 /***/ }),
-/* 18 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-const Url = __webpack_require__(26);
-const Buffer = __webpack_require__(15).Buffer
-const handleAppEndpoint = __webpack_require__(17);
-const handleLogin = __webpack_require__(20);
-const handleCallback = __webpack_require__(19);
+const Url = __webpack_require__(24);
+const Buffer = __webpack_require__(14).Buffer
+const handleAppEndpoint = __webpack_require__(15);
+const handleLogin = __webpack_require__(18);
+const handleCallback = __webpack_require__(17);
 const getAuthParams = __webpack_require__(2);
 
 module.exports = function (webtask, options) {
@@ -1668,7 +1420,7 @@ function error(err, res) {
 
 
 /***/ }),
-/* 19 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var getAuthParams = __webpack_require__(2)
@@ -1690,7 +1442,7 @@ module.exports = function (options, ctx, req, res, routingInfo) {
         }, ctx, res, res, routingInfo.baseUrl);
     }
 
-    return __webpack_require__(25)
+    return __webpack_require__(23)
         .post('https://' + authParams.domain + '/oauth/token')
         .type('form')
         .send({
@@ -1744,7 +1496,7 @@ module.exports = function (options, ctx, req, res, routingInfo) {
 
 
 /***/ }),
-/* 20 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1785,37 +1537,37 @@ module.exports = function(options, ctx, req, res, routingInfo) {
 
 
 /***/ }),
-/* 21 */
+/* 19 */
 /***/ (function(module, exports) {
 
 module.exports = require("buffer");
 
 /***/ }),
-/* 22 */
+/* 20 */
 /***/ (function(module, exports) {
 
 module.exports = require("fs");
 
 /***/ }),
-/* 23 */
+/* 21 */
 /***/ (function(module, exports) {
 
 module.exports = require("path");
 
 /***/ }),
-/* 24 */
+/* 22 */
 /***/ (function(module, exports) {
 
 module.exports = require("pug");
 
 /***/ }),
-/* 25 */
+/* 23 */
 /***/ (function(module, exports) {
 
 module.exports = require("superagent");
 
 /***/ }),
-/* 26 */
+/* 24 */
 /***/ (function(module, exports) {
 
 module.exports = require("url");

@@ -62,7 +62,9 @@ function lastLogCheckpoint(req, res) {
     }
 
     req.webtaskContext.storage.get((err, data) => {
-        let checkpointId = typeof data === 'undefined' ? null : data.checkpointId;
+        let startFromId = ctx.data.START_FROM ? ctx.data.START_FROM : null;
+        let checkpointId = typeof data === 'undefined' ? startFromId : data.checkpointId;
+
         /*
          * If this is a scheduled task, we'll get the last log checkpoint from the previous run and continue from there.
          */
@@ -101,16 +103,9 @@ function lastLogCheckpoint(req, res) {
                             logs.push(log);
                         }
                     });
-
                     console.log('Retrieved ' + logs.length + ' logs from Auth0 after ' + checkPoint + '.');
-                    setImmediate(function () {
-                        checkpointId = result[result.length - 1]._id;
-                        getLogs(result[result.length - 1]._id, callback);
-                    });
-                } else {
-                    console.log('Reached end of logs. Total: ' + logs.length + '.');
-                    return callback(null, logs);
-                }
+                } 
+                return callback(null, logs);
             });
         };
 
@@ -192,8 +187,14 @@ function lastLogCheckpoint(req, res) {
             }
 
             getLogs(checkpointId, (err, logs) => {
-                if (!logs) {
-                    return res.status(500).send({ err: err });
+                if (!logs || logs.length === 0) {
+                    return req.webtaskContext.storage.set({ checkpointId: checkpointId }, { force: 1 }, function (error) {
+                        if (error) {
+                            console.log('Error storing startCheckpoint', error);
+                                return res.status(500).send({ error: error });
+                        }
+                        res.sendStatus(200);
+                    });
                 }
 
                 exportLogs(logs, (err, response) => {
@@ -211,7 +212,7 @@ function lastLogCheckpoint(req, res) {
                         });
                     }
 
-                    if (response.errors.length > 0)
+                    if (response.errors && response.errors.length > 0)
                     {
                         return res.status(500).send(response.errors)
                     }
