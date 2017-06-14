@@ -40,12 +40,12 @@ module.exports = (configProvider, storageProvider) => {
     scopes: 'read:logs'
   }));
 
-  app.use(processLogs(storage));
-
   app.use('/meta', meta());
   app.use('/.extensions', hooks());
 
   app.use('/app', Express.static(path.join(__dirname, '../dist')));
+
+  app.use(processLogs(storage));
   app.use('/', routes(storage));
 
   // Generic error handler.
