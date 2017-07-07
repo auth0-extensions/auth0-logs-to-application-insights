@@ -1,5 +1,6 @@
 const _ = require('lodash');
 const moment = require('moment');
+const useragent = require('useragent');
 const appInsights = require('applicationinsights');
 
 const loggingTools = require('auth0-log-extension-tools');
@@ -52,7 +53,7 @@ const getClient = () => {
 const exportLogs = (client, logs, callback) => {
   logger.info('Exporting logs to Application Insights: ' + logs.length);
 
-  logs.forEach(function(record) {
+  logs.forEach((record) => {
     let level = 0;
     record.type_code = record.type;
 
@@ -82,7 +83,7 @@ const exportLogs = (client, logs, callback) => {
       record.details = record.details.substring(0, 8185) + '...';
     }
 
-    let agent = useragent.parse(record.user_agent);
+    const agent = useragent.parse(record.user_agent);
     record.os = agent.os.toString();
     record.os_version = agent.os.toVersion();
     record.device = agent.device.toString();
@@ -95,7 +96,7 @@ const exportLogs = (client, logs, callback) => {
     }
 
     if (level >= 3) {
-      let error = new Error(record.type);
+      const error = new Error(record.type);
       error.name = record.type;
       client.trackException(error, record);
     }
@@ -106,9 +107,7 @@ const exportLogs = (client, logs, callback) => {
   if (logs && logs.length) {
     logger.info('Flushing all data...');
 
-    client.sendPendingData((response) => {
-      return callback(null, response);
-    });
+    client.sendPendingData((response) => callback(null, response));
   } else {
     logger.info('No data to flush...');
 
@@ -138,7 +137,11 @@ module.exports = (storage) =>
 
       const events = _.filter(logs, (log) => (log.date && moment().diff(moment(log.date), 'hours') < 48));
 
-      exportLogs(aiClient, events, (err, response) => {
+      if (!events.length) {
+        return cb();
+      }
+
+      return exportLogs(aiClient, events, (err, response) => {
         try {
           response = JSON.parse(response);
         } catch (e) {
@@ -150,6 +153,8 @@ module.exports = (storage) =>
         // At least one item we sent was accepted, so we're good and next run can continue where we stopped.
         if (response.itemsAccepted && response.itemsAccepted > 0) {
           return cb();
+        } else if (response.errors && response.errors.length > 0) {
+          return cb(response.errors);
         }
 
         // None of our items were accepted, next run should continue from same starting point.
