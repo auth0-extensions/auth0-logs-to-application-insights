@@ -7357,7 +7357,7 @@ stylus-loader@^2.3.1:
     lodash.clonedeep "^4.5.0"
     when "~3.6.x"
 
-superagent@1.2.0:
+superagent@1.2.0, superagent@^1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/superagent/-/superagent-1.2.0.tgz#aac262533c1ec5538144a11371cd36f244a574fd"
   dependencies:
@@ -7373,7 +7373,7 @@ superagent@1.2.0:
     readable-stream "1.0.27-1"
     reduce-component "1.0.1"
 
-superagent@^1.2.0, superagent@^1.7.2, superagent@^1.8.3:
+superagent@^1.7.2, superagent@^1.8.3:
   version "1.8.5"
   resolved "https://registry.yarnpkg.com/superagent/-/superagent-1.8.5.tgz#1c0ddc3af30e80eb84ebc05cb2122da8fe940b55"
   dependencies:

@@ -43,18 +43,6 @@ module.exports = (configProvider, storageProvider) => {
 
   app.use(processLogs(storage));
 
-  app.use(expressTools.routes.dashboardAdmins({
-    secret: config('EXTENSION_SECRET'),
-    audience: 'urn:logs-to-application-insights',
-    rta: config('AUTH0_RTA').replace('https://', ''),
-    domain: config('AUTH0_DOMAIN'),
-    baseUrl: config('PUBLIC_WT_URL') || config('WT_URL'),
-    clientName: 'Logs to Application Insights',
-    urlPrefix: '',
-    sessionStorageKey: 'logs-to-application-insights:apiToken',
-    scopes: 'read:logs'
-  }));
-
   app.use('/app', Express.static(path.join(__dirname, '../dist')));
 
   app.use('/', routes(storage));
