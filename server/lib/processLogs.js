@@ -16,7 +16,7 @@ const getClient = () => {
   // Override the original getEnvelope method to allow setting a custom time.
   const originalGetEnvelope = client.getEnvelope;
   client.getEnvelope = (data, tagOverrides) => {
-    let envelope = originalGetEnvelope.apply(client, [data, tagOverrides]);
+    const envelope = originalGetEnvelope.apply(client, [ data, tagOverrides ]);
     envelope.time = data.baseData.properties.date;
     envelope.os = data.baseData.properties.os;
     envelope.osVer = data.baseData.properties.os_version;
@@ -32,10 +32,10 @@ const getClient = () => {
       envelope.tags['ai.location.ip'] = data.baseData.properties.ip;
     }
 
-    if (data.baseData.properties.user_id || data.baseData.properties.user_name) {
-      envelope.tags['ai.user.id'] = data.baseData.properties.user_id || data.baseData.properties.user_name;
-      envelope.tags['ai.user.accountId'] = data.baseData.properties.user_id || data.baseData.properties.user_name;
-      envelope.tags['ai.user.authUserId'] = data.baseData.properties.user_id || data.baseData.properties.user_name;
+    if (data.baseData.properties.user_id || data.baseData.properties.user_name) {
+      envelope.tags['ai.user.id'] = data.baseData.properties.user_id || data.baseData.properties.user_name;
+      envelope.tags['ai.user.accountId'] = data.baseData.properties.user_id || data.baseData.properties.user_name;
+      envelope.tags['ai.user.authUserId'] = data.baseData.properties.user_id || data.baseData.properties.user_name;
     }
 
     if (data.baseData.properties.user_agent) {
@@ -64,14 +64,14 @@ const exportLogs = (client, logs, callback) => {
 
     // Application Insights does not like null or empty strings.
     if (!record.ip || record.ip === '') delete record.ip;
-    if (!record.user_id || record.user_id === '')  delete record.user_id;
-    if (!record.user_name || record.user_name === '')  delete record.user_name;
-    if (!record.connection || record.connection === '')  delete record.connection;
+    if (!record.user_id || record.user_id === '') delete record.user_id;
+    if (!record.user_name || record.user_name === '') delete record.user_name;
+    if (!record.connection || record.connection === '') delete record.connection;
     if (!record.client_name || record.client_name === '') delete record.client_name;
-    if (!record.description || record.description === '')  delete record.description;
+    if (!record.description || record.description === '') delete record.description;
 
     // Application Insights does not like booleans.
-    record.isMobile = record.isMobile && 'yes' || 'no';
+    record.isMobile = (record.isMobile && 'yes') || 'no';
 
     // Application Insights does not like objects.
     if (record.details) {
@@ -98,24 +98,23 @@ const exportLogs = (client, logs, callback) => {
     if (level >= 3) {
       const error = new Error(record.type);
       error.name = record.type;
-      client.trackException(error, record);
+      return client.trackException(error, record);
     }
 
-    client.trackEvent(record.type, record);
+    return client.trackEvent(record.type, record);
   });
 
   if (logs && logs.length) {
     logger.info('Flushing all data...');
 
-    client.sendPendingData((response) => callback(null, response));
-  } else {
-    logger.info('No data to flush...');
-
-    return callback(null, '{ "itemsAccepted": 0 }');
+    return client.sendPendingData(response => callback(null, response));
   }
+
+  logger.info('No data to flush...');
+  return callback(null, '{ "itemsAccepted": 0 }');
 };
 
-module.exports = (storage) =>
+module.exports = storage =>
   (req, res, next) => {
     const wtBody = (req.webtaskContext && req.webtaskContext.body) || req.body || {};
     const wtHead = (req.webtaskContext && req.webtaskContext.headers) || {};
@@ -135,7 +134,7 @@ module.exports = (storage) =>
         return cb();
       }
 
-      const events = _.filter(logs, (log) => (log.date && moment().diff(moment(log.date), 'hours') < 48));
+      const events = _.filter(logs, log => (log.date && moment().diff(moment(log.date), 'hours') < 48));
 
       if (!events.length) {
         return cb();
@@ -212,12 +211,12 @@ module.exports = (storage) =>
           if (data.lastReportDate !== now && new Date().getHours() >= reportTime) {
             sendDailyReport(now);
           }
-        })
+        });
     };
 
     return auth0logger
       .run(onLogsReceived)
-      .then(result => {
+      .then((result) => {
         if (result && result.status && result.status.error) {
           slack.send(result.status, result.checkpoint);
         } else if (config('SLACK_SEND_SUCCESS') === true || config('SLACK_SEND_SUCCESS') === 'true') {
@@ -226,7 +225,7 @@ module.exports = (storage) =>
         checkReportTime();
         res.json(result);
       })
-      .catch(err => {
+      .catch((err) => {
         slack.send({ error: err, logsProcessed: 0 }, null);
         checkReportTime();
         next(err);
