@@ -3,7 +3,7 @@ const moment = require('moment');
 const useragent = require('useragent');
 const appInsights = require('applicationinsights');
 
-const loggingTools = require('auth0-log-extension-tools');
+const { Route } = require('auth0-log-extension-tools');
 const config = require('../lib/config');
 const logger = require('../lib/logger');
 
@@ -115,120 +115,60 @@ const exportLogs = (client, logs, callback) => {
   }
 };
 
-module.exports = (storage) =>
-  (req, res, next) => {
-    const wtBody = (req.webtaskContext && req.webtaskContext.body) || req.body || {};
-    const wtHead = (req.webtaskContext && req.webtaskContext.headers) || {};
-    const isCron = (wtBody.schedule && wtBody.state === 'active') || (wtHead.referer === `${config('AUTH0_MANAGE_URL')}/` && wtHead['if-none-match']);
-
-    if (!isCron) {
-      return next();
-    }
-
-    const aiClient = getClient();
-    aiClient.commonProperties = {
-      auth0_domain: config('AUTH0_DOMAIN')
-    };
-
-    const onLogsReceived = (logs, cb) => {
-      if (!logs || !logs.length) {
-        return cb();
-      }
-
-      const events = _.filter(logs, (log) => (log.date && moment().diff(moment(log.date), 'hours') < 48));
-
-      if (!events.length) {
-        return cb();
-      }
-
-      return exportLogs(aiClient, events, (err, response) => {
-        try {
-          response = JSON.parse(response);
-        } catch (e) {
-          logger.info('Error parsing response, this might indicate that an error occurred:', response);
-
-          return cb(response);
-        }
-
-        // At least one item we sent was accepted, so we're good and next run can continue where we stopped.
-        if (response.itemsAccepted && response.itemsAccepted > 0) {
-          return cb();
-        } else if (response.errors && response.errors.length > 0) {
-          return cb(response.errors);
-        }
-
-        // None of our items were accepted, next run should continue from same starting point.
-        logger.info('No items accepted.');
-        return cb({ message: 'No items accepted.' });
-      });
-    };
-
-    const slack = new loggingTools.reporters.SlackReporter({
-      hook: config('SLACK_INCOMING_WEBHOOK_URL'),
-      username: 'auth0-logs-to-application-insights',
-      title: 'Logs To Application Insights'
-    });
-
-    const options = {
-      domain: config('AUTH0_DOMAIN'),
-      clientId: config('AUTH0_CLIENT_ID'),
-      clientSecret: config('AUTH0_CLIENT_SECRET'),
-      batchSize: parseInt(config('BATCH_SIZE'), 10),
-      startFrom: config('START_FROM'),
-      logTypes: config('LOG_TYPES'),
-      logLevel: config('LOG_LEVEL')
-    };
-
-    if (!options.batchSize || options.batchSize > 100) {
-      options.batchSize = 100;
-    }
-
-    if (options.logTypes && !Array.isArray(options.logTypes)) {
-      options.logTypes = options.logTypes.replace(/\s/g, '').split(',');
-    }
-
-    const auth0logger = new loggingTools.LogsProcessor(storage, options);
-
-    const sendDailyReport = (lastReportDate) => {
-      const current = new Date();
-
-      const end = current.getTime();
-      const start = end - 86400000;
-      auth0logger.getReport(start, end)
-        .then(report => slack.send(report, report.checkpoint))
-        .then(() => storage.read())
-        .then((data) => {
-          data.lastReportDate = lastReportDate;
-          return storage.write(data);
-        });
-    };
-
-    const checkReportTime = () => {
-      storage.read()
-        .then((data) => {
-          const now = moment().format('DD-MM-YYYY');
-          const reportTime = config('DAILY_REPORT_TIME') || 16;
-
-          if (data.lastReportDate !== now && new Date().getHours() >= reportTime) {
-            sendDailyReport(now);
-          }
-        })
-    };
-
-    return auth0logger
-      .run(onLogsReceived)
-      .then(result => {
-        if (result && result.status && result.status.error) {
-          slack.send(result.status, result.checkpoint);
-        } else if (config('SLACK_SEND_SUCCESS') === true || config('SLACK_SEND_SUCCESS') === 'true') {
-          slack.send(result.status, result.checkpoint);
-        }
-        checkReportTime();
-        res.json(result);
-      })
-      .catch(err => {
-        slack.send({ error: err, logsProcessed: 0 }, null);
-        checkReportTime();
-        next(err);
-      });
+module.exports = (storage) => {
+  const aiClient = getClient();
+  aiClient.commonProperties = {
+    auth0_domain: config('AUTH0_DOMAIN')
   };
+
+  const onLogsReceived = (logs, cb) => {
+    if (!logs || !logs.length) {
+      return cb();
+    }
+
+    const events = _.filter(logs, (log) => (log.date && moment().diff(moment(log.date), 'hours') < 48));
+
+    if (!events.length) {
+      return cb();
+    }
+
+    return exportLogs(aiClient, events, (err, response) => {
+      try {
+        response = JSON.parse(response);
+      } catch (e) {
+        logger.info('Error parsing response, this might indicate that an error occurred:', response);
+
+        return cb(response);
+      }
+
+      // At least one item we sent was accepted, so we're good and next run can continue where we stopped.
+      if (response.itemsAccepted && response.itemsAccepted > 0) {
+        return cb();
+      } else if (response.errors && response.errors.length > 0) {
+        return cb(response.errors);
+      }
+
+      // None of our items were accepted, next run should continue from same starting point.
+      logger.info('No items accepted.');
+      return cb({ message: 'No items accepted.' });
+    });
+  };
+
+  const options = {
+    domain: config('AUTH0_DOMAIN'),
+    clientId: config('AUTH0_CLIENT_ID'),
+    clientSecret: config('AUTH0_CLIENT_SECRET'),
+    batchSize: config('BATCH_SIZE'),
+    startFrom: config('START_FROM'),
+    logTypes: config('LOG_TYPES'),
+    logLevel: config('LOG_LEVEL'),
+    reportTime: config('DAILY_REPORT_TIME'),
+    sendSuccess: config('SLACK_SEND_SUCCESS'),
+    slackWebhook: config('SLACK_INCOMING_WEBHOOK_URL'),
+    extensionName: 'auth0-logs-to-application-insights',
+    extensionTitle: 'Logs To Application Insights',
+    onLogsReceived
+  };
+
+  return Route(storage, options);
+};
