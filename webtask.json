@@ -1,7 +1,7 @@
 {
   "title": "Auth0 Logs to Application Insights",
   "name": "auth0-logs-to-application-insights",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "author": "auth0",
   "description": "This extension will take all of your Auth0 logs and export them to Application Insights",
   "type": "cron",
@@ -95,28 +95,80 @@
           "value": "s"
         },
         {
-          "text": "Success Exchange",
-          "value": "seacft"
+          "text": "Success Silent Auth",
+          "value": "ssa"
         },
         {
-          "text": "Success Exchange (Client Credentials)",
-          "value": "seccft"
+          "text": "Failed Silent Auth",
+          "value": "fsa"
+        },
+        {
+          "text": "Success Exchange",
+          "value": "seacft"
         },
         {
           "text": "Failed Exchange",
           "value": "feacft"
         },
         {
-          "text": "Failed Exchange (Client Credentials)",
+          "text": "Success Exchange",
+          "value": "seccft"
+        },
+        {
+          "text": "Failed Exchange",
           "value": "feccft"
+        },
+        {
+          "text": "Success Exchange",
+          "value": "sepft"
+        },
+        {
+          "text": "Failed Exchange",
+          "value": "fepft"
+        },
+        {
+          "text": "Success Exchange",
+          "value": "sertft"
+        },
+        {
+          "text": "Failed Exchange",
+          "value": "fertft"
+        },
+        {
+          "text": "Success Exchange",
+          "value": "seoobft"
+        },
+        {
+          "text": "Failed Exchange",
+          "value": "feoobft"
+        },
+        {
+          "text": "Success Exchange",
+          "value": "seotpft"
+        },
+        {
+          "text": "Failed Exchange",
+          "value": "feotpft"
+        },
+        {
+          "text": "Success Exchange",
+          "value": "sercft"
+        },
+        {
+          "text": "Failed Exchange",
+          "value": "fercft"
         },
         {
           "text": "Failed Login",
           "value": "f"
         },
         {
-          "text": "Warnings During Login",
+          "text": "Warning",
           "value": "w"
+        },
+        {
+          "text": "Deprecation Notice",
+          "value": "depnote"
         },
         {
           "text": "Deleted User",
@@ -183,6 +235,14 @@
           "value": "fcp"
         },
         {
+          "text": "Success Post Change Password Hook",
+          "value": "scph"
+        },
+        {
+          "text": "Failed Post Change Password Hook",
+          "value": "fcph"
+        },
+        {
           "text": "Success Change Email",
           "value": "sce"
         },
@@ -239,12 +299,20 @@
           "value": "limit_wc"
         },
         {
+          "text": "Blocked IP Address",
+          "value": "limit_mu"
+        },
+        {
           "text": "Too Many Calls to /userinfo",
           "value": "limit_ui"
         },
         {
           "text": "Rate Limit On API",
           "value": "api_limit"
+        },
+        {
+          "text": "Too Many Calls to /delegation",
+          "value": "limit_delegation"
         },
         {
           "text": "Successful User Deletion",
@@ -255,12 +323,24 @@
           "value": "fdu"
         },
         {
-          "text": "Blocked Account",
-          "value": "limit_wc"
+          "text": "Auth0 Update Launched",
+          "value": "admin_update_launch"
         },
         {
-          "text": "Blocked IP Address",
-          "value": "limit_mu"
+          "text": "Auth0 OS Update Started",
+          "value": "sys_os_update_start"
+        },
+        {
+          "text": "Auth0 OS Update Ended",
+          "value": "sys_os_update_end"
+        },
+        {
+          "text": "Auth0 Update Started",
+          "value": "sys_update_start"
+        },
+        {
+          "text": "Auth0 Update Ended",
+          "value": "sys_update_end"
         },
         {
           "text": "Success Logout",
@@ -277,6 +357,110 @@
         {
           "text": "Failed Delegation",
           "value": "fd"
+        },
+        {
+          "text": "Unenroll device account",
+          "value": "gd_unenroll"
+        },
+        {
+          "text": "Update device account",
+          "value": "gd_update_device_account"
+        },
+        {
+          "text": "Module switch",
+          "value": "gd_module_switch"
+        },
+        {
+          "text": "Guardian tenant update",
+          "value": "gd_tenant_update"
+        },
+        {
+          "text": "Second factor started",
+          "value": "gd_start_auth"
+        },
+        {
+          "text": "Enroll started",
+          "value": "gd_start_enroll"
+        },
+        {
+          "text": "MFA Enrollment start failed",
+          "value": "gd_start_enroll_failed"
+        },
+        {
+          "text": "User delete",
+          "value": "gd_user_delete"
+        },
+        {
+          "text": "OTP Auth suceed",
+          "value": "gd_auth_succeed"
+        },
+        {
+          "text": "OTP Auth failed",
+          "value": "gd_auth_failed"
+        },
+        {
+          "text": "Push notification sent",
+          "value": "gd_send_pn"
+        },
+        {
+          "text": "Error sending MFA Push Notification",
+          "value": "gd_send_pn_failure"
+        },
+        {
+          "text": "OTP Auth rejected",
+          "value": "gd_auth_rejected"
+        },
+        {
+          "text": "Recovery succeed",
+          "value": "gd_recovery_succeed"
+        },
+        {
+          "text": "Recovery failed",
+          "value": "gd_recovery_failed"
+        },
+        {
+          "text": "SMS Sent",
+          "value": "gd_send_sms"
+        },
+        {
+          "text": "Error sending MFA SMS",
+          "value": "gd_send_sms_failure"
+        },
+        {
+          "text": "Too many failures",
+          "value": "gd_otp_rate_limit_exceed"
+        },
+        {
+          "text": "Too many failures",
+          "value": "gd_recovery_rate_limit_exceed"
+        },
+        {
+          "text": "Guardian enrollment complete",
+          "value": "gd_enrollment_complete"
+        },
+        {
+          "text": "Users import",
+          "value": "fui"
+        },
+        {
+          "text": "Users import",
+          "value": "sui"
+        },
+        {
+          "text": "Breached password",
+          "value": "pwd_leak"
+        },
+        {
+          "text": "Failed cross origin authentication",
+          "value": "fcoa"
+        },
+        {
+          "text": "Success cross origin authentication",
+          "value": "scoa"
+        },
+        {
+          "text": "Account unblocked",
+          "value": "ublkdu"
         }
       ]
     }
